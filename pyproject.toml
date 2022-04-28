@@ -1,11 +1,13 @@
 [tool.poetry]
-name = "9_evaluation_selection"
+name = "forest_ml"
 version = "0.1.0"
 description = ""
 authors = ["Filinova Marina <filinugu@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
+numpy = "^1.22.3"
+pandas = "^1.4.2"
 
 [tool.poetry.dev-dependencies]
 
