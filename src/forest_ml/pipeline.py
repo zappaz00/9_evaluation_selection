@@ -9,6 +9,7 @@ def create_pipeline(
     pipeline_steps = []
     if use_scaler:
         pipeline_steps.append(("scaler", StandardScaler()))
+
     pipeline_steps.append(
         (
             "classifier",
