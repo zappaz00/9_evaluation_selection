@@ -16,11 +16,11 @@ def create_pipeline(
         pipeline_steps.append(("scaler", StandardScaler()))
 
     reductor = None
-    if use_dim_red == DimReduceType.PCA:
+    if use_dim_red == DimReduceType.pca:
         reductor = PCA(n_components=dim_red_comp)
-    elif use_dim_red == DimReduceType.TSVD:
+    elif use_dim_red == DimReduceType.tsvd:
         reductor = TruncatedSVD(n_components=dim_red_comp)
-    elif use_dim_red == DimReduceType.TSVD:
+    elif use_dim_red == DimReduceType.tsne:
         reductor = TSNE(n_components=dim_red_comp)
 
     if reductor is not None:
@@ -31,11 +31,11 @@ def create_pipeline(
         )
 
     clf = None
-    if model_type == ModelType.LOGREG:
+    if model_type == ModelType.logreg:
         clf = LogisticRegression(random_state=random_state)
-    elif model_type == ModelType.RANDOMFOREST:
+    elif model_type == ModelType.randomforest:
         clf = RandomForestClassifier(random_state=random_state)
-    elif model_type == ModelType.KNN:
+    elif model_type == ModelType.knn:
         clf = KNeighborsClassifier() #no random_state
     else:
         raise ValueError('Unknown model type')

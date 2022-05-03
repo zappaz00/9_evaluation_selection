@@ -1,6 +1,6 @@
 from enum import Enum
 
 class ModelType(Enum):
-    LOGREG = 1
-    KNN = 2
-    RANDOMFOREST = 3
+    logreg = 1
+    knn = 2
+    randomforest = 3

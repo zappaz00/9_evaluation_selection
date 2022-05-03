@@ -1,7 +1,7 @@
 from enum import Enum
 
 class DimReduceType(Enum):
-    NONE = 0
-    TSNE = 1
-    PCA = 2
-    TSVD = 3
+    none = 0
+    tsne = 1
+    pca = 2
+    tsvd = 3

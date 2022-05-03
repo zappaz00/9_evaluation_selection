@@ -4,7 +4,8 @@ from joblib import dump
 import click
 import mlflow
 import mlflow.sklearn
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, roc_auc_score, log_loss
+from sklearn.model_selection import cross_validate
 
 from .data import get_dataset
 from .pipeline import create_pipeline
@@ -41,8 +42,9 @@ from .dim_red_type import DimReduceType
 )
 @click.option(
     "--red-type",
-    default=DimReduceType.NONE,
-    type=DimReduceType,
+    default='none',
+    type=click.Choice(DimReduceType.__members__),
+    callback=lambda c, p, v: getattr(DimReduceType, v) if v else None,
     show_default=True,
 )
 @click.option(
@@ -59,8 +61,9 @@ from .dim_red_type import DimReduceType
 )
 @click.option(
     "--model-type",
-    default=ModelType.LOGREG,
-    type=ModelType,
+    default='logreg',
+    type=click.Choice(ModelType.__members__),
+    callback=lambda c, p, v: getattr(ModelType, v) if v else None,
     show_default=True,
 )
 @click.option(
@@ -88,7 +91,11 @@ def train(
     with mlflow.start_run():
         pipeline = create_pipeline(red_type, red_comp, use_scaler, model_type, hyperparams, random_state)
         pipeline.fit(features_train, target_train)
-        accuracy = accuracy_score(target_val, pipeline.predict(features_val))
+
+        metrics = {}
+        metrics['accuracy'] = accuracy_score(target_val, pipeline.predict(features_val))
+        metrics['log_loss'] = log_loss(target_val, pipeline.predict(features_val))
+        metrics['roc_auc'] = roc_auc_score(target_val, pipeline.predict(features_val))
 
         all_params = hyperparams
         all_params['model_type'] = model_type
@@ -97,7 +104,9 @@ def train(
         all_params['red_comp'] = red_comp
 
         mlflow.log_params(all_params)
-        mlflow.log_metric("accuracy", accuracy)
-        click.echo(f"Accuracy: {accuracy}.")
+        mlflow.log_metrics(metrics)
+        click.echo(f"Accuracy: {metrics['accuracy']}.")
+        click.echo(f"Log Loss: {metrics['log_loss']}.")
+        click.echo(f"ROC AUC: {metrics['roc_auc']}.")
         dump(pipeline, save_model_path)
         click.echo(f"Model is saved to {save_model_path}.")
