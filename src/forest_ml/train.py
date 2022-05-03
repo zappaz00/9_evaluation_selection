@@ -124,15 +124,21 @@ def train(
 
         # создаём пайплайн
         pipeline = create_pipeline(red_type, red_comp, use_scaler, model_type, hyperparams_dict, random_state)
-        pipeline.fit(features_train, target_train)
+
+        cv_scores = cross_validate(pipeline,
+                                    features_train,
+                                    target_train,
+                                    cv=5,
+                                    return_estimator=True,
+                                    return_train_score=True,
+                                    scoring=['accuracy', 'f1_weighted', 'precision_weighted', 'recall_weighted'])
 
         # считаем метрики
-        preds = pipeline.predict(features_val)
         metrics = {}
-        metrics['accuracy'] = accuracy_score(target_val, preds)
-        metrics['f1'] = f1_score(target_val, preds, average='weighted')
-        metrics['precision'] = precision_score(target_val, preds, average='weighted')
-        metrics['recall'] = recall_score(target_val, preds, average='weighted')
+        metrics['accuracy'] = np.mean(cv_scores['test_accuracy'])
+        metrics['f1'] = np.mean(cv_scores['test_f1_weighted'])
+        metrics['precision'] = np.mean(cv_scores['test_precision_weighted'])
+        metrics['recall'] = np.mean(cv_scores['test_recall_weighted'])
 
         # готовим параметры для MLFlow
         all_params = hyperparams_dict
