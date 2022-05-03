@@ -55,12 +55,6 @@ def is_bool(str):
     show_default=True,
 )
 @click.option(
-    "--test-split-ratio",
-    default=0.2,
-    type=click.FloatRange(0, 1, min_open=True, max_open=True),
-    show_default=True,
-)
-@click.option(
     "--red-type",
     default='none',
     type=click.Choice(DimReduceType.__members__),
@@ -91,18 +85,13 @@ def train(
         dataset_path: Path,
         save_model_path: Path,
         random_state: int,
-        test_split_ratio: float,
         red_type: DimReduceType,
         red_comp: int,
         use_scaler: bool,
         model_type: ModelType,
         hyperparams: dict,
 ) -> None:
-    features_train, features_val, target_train, target_val = get_dataset(
-        dataset_path,
-        random_state,
-        test_split_ratio,
-    )
+    features, target = get_dataset(dataset_path)
     mlflow.set_experiment("default")
 
     with mlflow.start_run():
@@ -126,8 +115,8 @@ def train(
         pipeline = create_pipeline(red_type, red_comp, use_scaler, model_type, hyperparams_dict, random_state)
 
         cv_scores = cross_validate(pipeline,
-                                    features_train,
-                                    target_train,
+                                    features,
+                                    target,
                                     cv=5,
                                     return_estimator=True,
                                     return_train_score=True,
