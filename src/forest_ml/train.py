@@ -8,6 +8,8 @@ from sklearn.metrics import accuracy_score
 
 from .data import get_dataset
 from .pipeline import create_pipeline
+from .model_type import ModelType
+from .dim_red_type import DimReduceType
 
 
 @click.command()
@@ -38,21 +40,33 @@ from .pipeline import create_pipeline
     show_default=True,
 )
 @click.option(
+    "--red-type",
+    default=DimReduceType.NONE,
+    type=DimReduceType,
+    show_default=True,
+)
+@click.option(
+    "--red-comp",
+    default=0,
+    type=int,
+    show_default=True,
+)
+@click.option(
     "--use-scaler",
     default=True,
     type=bool,
     show_default=True,
 )
 @click.option(
-    "--max-iter",
-    default=100,
-    type=int,
+    "--model-type",
+    default=ModelType.LOGREG,
+    type=ModelType,
     show_default=True,
 )
 @click.option(
-    "--logreg-c",
-    default=1.0,
-    type=float,
+    "--hyperparams",
+    default={},
+    type=dict,
     show_default=True,
 )
 def train(
@@ -60,9 +74,11 @@ def train(
         save_model_path: Path,
         random_state: int,
         test_split_ratio: float,
+        red_type: DimReduceType,
+        red_comp: int,
         use_scaler: bool,
-        max_iter: int,
-        logreg_c: float,
+        model_type: ModelType,
+        hyperparams: dict,
 ) -> None:
     features_train, features_val, target_train, target_val = get_dataset(
         dataset_path,
@@ -70,12 +86,17 @@ def train(
         test_split_ratio,
     )
     with mlflow.start_run():
-        pipeline = create_pipeline(use_scaler, max_iter, logreg_c, random_state)
+        pipeline = create_pipeline(red_type, red_comp, use_scaler, model_type, hyperparams, random_state)
         pipeline.fit(features_train, target_train)
         accuracy = accuracy_score(target_val, pipeline.predict(features_val))
-        mlflow.log_param("use_scaler", use_scaler)
-        mlflow.log_param("max_iter", max_iter)
-        mlflow.log_param("logreg_c", logreg_c)
+
+        all_params = hyperparams
+        all_params['model_type'] = model_type
+        all_params['use_scaler'] = use_scaler
+        all_params['dim_red_type'] = red_type
+        all_params['red_comp'] = red_comp
+
+        mlflow.log_params(all_params)
         mlflow.log_metric("accuracy", accuracy)
         click.echo(f"Accuracy: {accuracy}.")
         dump(pipeline, save_model_path)
