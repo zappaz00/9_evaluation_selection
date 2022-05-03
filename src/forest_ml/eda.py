@@ -9,7 +9,7 @@ import pandas as pd
 @click.option(
     "-d",
     "--dataset-path",
-    default="data/heart.csv",
+    default="data/train.csv",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     show_default=True,
 )
@@ -18,4 +18,4 @@ def eda(
 ) -> None:
     dataset = pd.read_csv(dataset_path)
     profile = ProfileReport(dataset, title="Pandas Profiling Report", explorative=True)
-    profile.to_file("eda_report.html")
+    profile.to_file("./eda_report.html")

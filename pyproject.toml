@@ -1,8 +1,15 @@
 [tool.poetry]
 name = "forest_ml"
 version = "0.1.0"
-description = ""
+description = "Homework for RS School Machine Learning course"
 authors = ["Filinova Marina <filinugu@gmail.com>"]
+packages = [
+    { include = "forest_ml", from = "src" },
+]
+
+[tool.poetry.scripts]
+train = "forest_ml.train:train"
+eda = "forest_ml.eda:eda"
 
 [tool.poetry.dependencies]
 python = "^3.9"

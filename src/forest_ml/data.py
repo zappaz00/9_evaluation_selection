@@ -12,8 +12,8 @@ def get_dataset(
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     dataset = pd.read_csv(csv_path)
     click.echo(f"Dataset shape: {dataset.shape}.")
-    features = dataset.drop("target", axis=1)
-    target = dataset["target"]
+    features = dataset.drop("Cover_Type", axis=1)
+    target = dataset["Cover_Type"]
     features_train, features_val, target_train, target_val = train_test_split(
         features, target, test_size=test_split_ratio, random_state=random_state
     )
