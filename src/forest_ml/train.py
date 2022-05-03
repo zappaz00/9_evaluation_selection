@@ -4,7 +4,9 @@ from joblib import dump
 import click
 import mlflow
 import mlflow.sklearn
-from sklearn.metrics import accuracy_score, roc_auc_score, log_loss
+import numpy as np
+import distutils
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.model_selection import cross_validate
 
 from .data import get_dataset
@@ -13,7 +15,25 @@ from .model_type import ModelType
 from .dim_red_type import DimReduceType
 
 
-@click.command()
+def is_float(str):
+    try:
+        float(str)
+        return True
+    except ValueError:
+        return False
+
+
+def is_bool(str):
+    try:
+        bool(distutils.util.strtobool(str))
+        return True
+    except ValueError:
+        return False
+
+
+@click.command(context_settings=dict(
+    ignore_unknown_options=True,
+))
 @click.option(
     "-d",
     "--dataset-path",
@@ -66,12 +86,7 @@ from .dim_red_type import DimReduceType
     callback=lambda c, p, v: getattr(ModelType, v) if v else None,
     show_default=True,
 )
-@click.option(
-    "--hyperparams",
-    default={},
-    type=dict,
-    show_default=True,
-)
+@click.argument('hyperparams', nargs=-1, type=click.UNPROCESSED)
 def train(
         dataset_path: Path,
         save_model_path: Path,
@@ -88,25 +103,51 @@ def train(
         random_state,
         test_split_ratio,
     )
+    mlflow.set_experiment("default")
+
     with mlflow.start_run():
-        pipeline = create_pipeline(red_type, red_comp, use_scaler, model_type, hyperparams, random_state)
+        # парсим экстра-параметры
+        hyperparams_dict = {}
+        for hyperparam in hyperparams:
+            # конвертация типов
+            curr_split = hyperparam.split('=')
+            if curr_split[1].isnumeric():
+                curr_split[1] = int(curr_split[1])
+            elif is_float(curr_split[1]):
+                curr_split[1] = float(curr_split[1])
+            elif is_bool(curr_split[1]):
+                curr_split[1] = bool(curr_split[1])
+            hyperparams_dict.update([curr_split])
+
+        if hyperparams_dict.get('c') is not None:
+            hyperparams_dict['C'] = hyperparams_dict.pop('c') # единственный параметр в Uppercase для LogReg
+
+        # создаём пайплайн
+        pipeline = create_pipeline(red_type, red_comp, use_scaler, model_type, hyperparams_dict, random_state)
         pipeline.fit(features_train, target_train)
 
+        # считаем метрики
+        preds = pipeline.predict(features_val)
         metrics = {}
-        metrics['accuracy'] = accuracy_score(target_val, pipeline.predict(features_val))
-        metrics['log_loss'] = log_loss(target_val, pipeline.predict(features_val))
-        metrics['roc_auc'] = roc_auc_score(target_val, pipeline.predict(features_val))
+        metrics['accuracy'] = accuracy_score(target_val, preds)
+        metrics['f1'] = f1_score(target_val, preds, average='weighted')
+        metrics['precision'] = precision_score(target_val, preds, average='weighted')
+        metrics['recall'] = recall_score(target_val, preds, average='weighted')
 
-        all_params = hyperparams
+        # готовим параметры для MLFlow
+        all_params = hyperparams_dict
         all_params['model_type'] = model_type
         all_params['use_scaler'] = use_scaler
         all_params['dim_red_type'] = red_type
         all_params['red_comp'] = red_comp
 
+        # записываем в MLFlow и сохраняем модель
         mlflow.log_params(all_params)
         mlflow.log_metrics(metrics)
+        mlflow.sklearn.log_model(pipeline, "model")
         click.echo(f"Accuracy: {metrics['accuracy']}.")
-        click.echo(f"Log Loss: {metrics['log_loss']}.")
-        click.echo(f"ROC AUC: {metrics['roc_auc']}.")
+        click.echo(f"F1 Weighted: {metrics['f1']}.")
+        click.echo(f"Precision Weighted: {metrics['precision']}.")
+        click.echo(f"Recall Weighted: {metrics['recall']}.")
         dump(pipeline, save_model_path)
         click.echo(f"Model is saved to {save_model_path}.")
