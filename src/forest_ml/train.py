@@ -92,7 +92,7 @@ def train(
         hyperparams: dict,
 ) -> None:
     features, target = get_dataset(dataset_path)
-    mlflow.set_experiment("default")
+    # mlflow.set_experiment("default")
 
     with mlflow.start_run():
         # парсим экстра-параметры

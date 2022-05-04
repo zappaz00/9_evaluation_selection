@@ -4,7 +4,6 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA, TruncatedSVD
-from sklearn.manifold import TSNE
 from .model_type import ModelType
 from .dim_red_type import DimReduceType
 
@@ -20,8 +19,6 @@ def create_pipeline(
         reductor = PCA(n_components=dim_red_comp)
     elif use_dim_red == DimReduceType.tsvd:
         reductor = TruncatedSVD(n_components=dim_red_comp)
-    elif use_dim_red == DimReduceType.tsne:
-        reductor = TSNE(n_components=dim_red_comp)
 
     if reductor is not None:
         pipeline_steps.append(
