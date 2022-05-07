@@ -5,30 +5,13 @@ import click
 import mlflow
 import mlflow.sklearn
 import numpy as np
-import distutils
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn.model_selection import cross_validate
 
+from sklearn.model_selection import cross_validate, GridSearchCV, KFold, RandomizedSearchCV
+
+from .params import get_params_distr, parse_hyperparams
 from .data import get_dataset
 from .pipeline import create_pipeline
-from .model_type import ModelType
-from .dim_red_type import DimReduceType
-
-
-def is_float(str):
-    try:
-        float(str)
-        return True
-    except ValueError:
-        return False
-
-
-def is_bool(str):
-    try:
-        bool(distutils.util.strtobool(str))
-        return True
-    except ValueError:
-        return False
+from .defs import DimReduceType, ModelType, TuneType
 
 
 @click.command(context_settings=dict(
@@ -49,6 +32,20 @@ def is_bool(str):
     show_default=True,
 )
 @click.option(
+    "--tuning",
+    default='auto_random',
+    type=click.Choice(TuneType.__members__),
+    callback=lambda c, p, v: getattr(TuneType, v) if v else None,
+    show_default=True,
+)
+@click.option(
+    "--model-type",
+    default='logreg',
+    type=click.Choice(ModelType.__members__),
+    callback=lambda c, p, v: getattr(ModelType, v) if v else None,
+    show_default=True,
+)
+@click.option(
     "--random-state",
     default=42,
     type=int,
@@ -62,65 +59,65 @@ def is_bool(str):
     show_default=True,
 )
 @click.option(
-    "--red-comp",
-    default=0,
-    type=int,
-    show_default=True,
-)
-@click.option(
     "--use-scaler",
     default=True,
     type=bool,
-    show_default=True,
-)
-@click.option(
-    "--model-type",
-    default='logreg',
-    type=click.Choice(ModelType.__members__),
-    callback=lambda c, p, v: getattr(ModelType, v) if v else None,
     show_default=True,
 )
 @click.argument('hyperparams', nargs=-1, type=click.UNPROCESSED)
 def train(
         dataset_path: Path,
         save_model_path: Path,
+        tuning: TuneType,
+        model_type: ModelType,
         random_state: int,
         red_type: DimReduceType,
-        red_comp: int,
         use_scaler: bool,
-        model_type: ModelType,
         hyperparams: dict,
 ) -> None:
     features, target = get_dataset(dataset_path)
     # mlflow.set_experiment("default")
 
     with mlflow.start_run():
-        # парсим экстра-параметры
-        hyperparams_dict = {}
-        for hyperparam in hyperparams:
-            # конвертация типов
-            curr_split = hyperparam.split('=')
-            if curr_split[1].isnumeric():
-                curr_split[1] = int(curr_split[1])
-            elif is_float(curr_split[1]):
-                curr_split[1] = float(curr_split[1])
-            elif is_bool(curr_split[1]):
-                curr_split[1] = bool(curr_split[1])
-            hyperparams_dict.update([curr_split])
-
-        if hyperparams_dict.get('c') is not None:
-            hyperparams_dict['C'] = hyperparams_dict.pop('c') # единственный параметр в Uppercase для LogReg
+        hyperparams_dict = parse_hyperparams(hyperparams)
 
         # создаём пайплайн
-        pipeline = create_pipeline(red_type, red_comp, use_scaler, model_type, hyperparams_dict, random_state)
+        pipeline = create_pipeline(red_type, use_scaler, model_type, hyperparams_dict, random_state)
+        metrics_names = ['accuracy', 'f1_weighted', 'precision_weighted', 'recall_weighted']
 
-        cv_scores = cross_validate(pipeline,
-                                    features,
-                                    target,
-                                    cv=5,
-                                    return_estimator=True,
-                                    return_train_score=True,
-                                    scoring=['accuracy', 'f1_weighted', 'precision_weighted', 'recall_weighted'])
+        if tuning == TuneType.manual:
+            cv_scores = cross_validate(pipeline,
+                                       features,
+                                       target,
+                                       cv=5,
+                                       return_estimator=True,
+                                       return_train_score=True,
+                                       scoring=metrics_names)
+
+        elif tuning == TuneType.auto_random or tuning == TuneType.auto_grid:
+            params_for_search = {}
+
+            for hyperparam_name, hyperparam_space in hyperparams_dict.items():
+                if hyperparam_name == 'n_components':
+                    pipe_param_name = 'reductor__' + hyperparam_name
+                else:
+                    pipe_param_name = 'classifier__' + hyperparam_name
+
+                params_for_search[pipe_param_name] = hyperparam_space
+
+            print(params_for_search)
+
+            inner_cv = KFold(n_splits=3,  shuffle=True, random_state=random_state)
+            outer_cv = KFold(n_splits=10, shuffle=True, random_state=random_state)
+
+            # для внутреннего цикла согласно заданию одна метрика
+            if tuning == TuneType.auto_random:
+                param_searcher = RandomizedSearchCV(estimator=pipeline, param_distributions=params_for_search, scoring='accuracy', cv=inner_cv)
+            elif tuning == TuneType.auto_grid:
+                param_searcher = GridSearchCV(estimator=pipeline, param_grid=params_for_search, scoring='accuracy', cv=inner_cv)
+
+            # у всяких сёрчеров параметров есть метод predict, который автоматически адресуется к best_estimator.
+            cv_scores = cross_validate(param_searcher, X=features, y=target, cv=outer_cv, scoring=metrics_names, return_estimator=True, return_train_score=True)
 
         # считаем метрики
         metrics = {}
@@ -134,7 +131,6 @@ def train(
         all_params['model_type'] = model_type
         all_params['use_scaler'] = use_scaler
         all_params['dim_red_type'] = red_type
-        all_params['red_comp'] = red_comp
 
         # записываем в MLFlow и сохраняем модель
         mlflow.log_params(all_params)
