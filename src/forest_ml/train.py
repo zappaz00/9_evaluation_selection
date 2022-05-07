@@ -85,7 +85,10 @@ def train(
         pipeline = create_pipeline(red_type, use_scaler, model_type, hyperparams_dict, random_state)
         metrics_names = ['accuracy', 'f1_weighted', 'precision_weighted', 'recall_weighted']
 
+        all_params = {}
         if tuning == TuneType.manual:
+            all_params = hyperparams_dict
+
             cv_scores = cross_validate(pipeline,
                                        features,
                                        target,
@@ -93,6 +96,8 @@ def train(
                                        return_estimator=True,
                                        return_train_score=True,
                                        scoring=metrics_names)
+
+            mlflow.sklearn.log_model(pipeline, "model")
 
         elif tuning == TuneType.auto_random or tuning == TuneType.auto_grid:
             params_for_search = {}
@@ -112,22 +117,30 @@ def train(
 
             # для внутреннего цикла согласно заданию одна метрика
             if tuning == TuneType.auto_random:
-                param_searcher = RandomizedSearchCV(estimator=pipeline, param_distributions=params_for_search, scoring='accuracy', cv=inner_cv)
+                param_searcher = RandomizedSearchCV(estimator=pipeline, param_distributions=params_for_search, scoring='accuracy', cv=inner_cv) # refit=True default
             elif tuning == TuneType.auto_grid:
-                param_searcher = GridSearchCV(estimator=pipeline, param_grid=params_for_search, scoring='accuracy', cv=inner_cv)
+                param_searcher = GridSearchCV(estimator=pipeline, param_grid=params_for_search, scoring='accuracy', cv=inner_cv) # refit=True default
 
             # у всяких сёрчеров параметров есть метод predict, который автоматически адресуется к best_estimator.
             cv_scores = cross_validate(param_searcher, X=features, y=target, cv=outer_cv, scoring=metrics_names, return_estimator=True, return_train_score=True)
+            best_estimator = cv_scores['estimator'][np.argmax(cv_scores['test_accuracy'])]
+            best_params = best_estimator.get_params()
+            for best_param_name, best_param_val in best_params.items():
+                if 'classifier__' in best_param_name:
+                    all_params[best_param_name.replace('classifier__', '')] = best_param_val
+                elif 'reductor__' in best_param_name:
+                    all_params[best_param_name.replace('reductor__', '')] = best_param_val
+
+            mlflow.sklearn.log_model(best_estimator, "model")
 
         # считаем метрики
         metrics = {}
-        metrics['accuracy'] = np.mean(cv_scores['test_accuracy'])
-        metrics['f1'] = np.mean(cv_scores['test_f1_weighted'])
-        metrics['precision'] = np.mean(cv_scores['test_precision_weighted'])
-        metrics['recall'] = np.mean(cv_scores['test_recall_weighted'])
+        for metrics_name in metrics_names:
+            cv_name = 'test_' + metrics_name
+            metrics[metrics_name] = float(np.mean(cv_scores[cv_name]))
+            click.echo(f"{metrics_name}: {metrics[metrics_name]}.")
 
         # готовим параметры для MLFlow
-        all_params = hyperparams_dict
         all_params['model_type'] = model_type
         all_params['use_scaler'] = use_scaler
         all_params['dim_red_type'] = red_type
@@ -136,9 +149,5 @@ def train(
         mlflow.log_params(all_params)
         mlflow.log_metrics(metrics)
         mlflow.sklearn.log_model(pipeline, "model")
-        click.echo(f"Accuracy: {metrics['accuracy']}.")
-        click.echo(f"F1 Weighted: {metrics['f1']}.")
-        click.echo(f"Precision Weighted: {metrics['precision']}.")
-        click.echo(f"Recall Weighted: {metrics['recall']}.")
         dump(pipeline, save_model_path)
         click.echo(f"Model is saved to {save_model_path}.")
