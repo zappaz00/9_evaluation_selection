@@ -41,14 +41,14 @@ from .defs import DimReduceType, ModelType, TuneType
 @click.option(
     "--tuning",
     default="auto_random",
-    type=str,
+    type=click.Choice(["manual", "auto_random", "auto_grid"]),
     callback=lambda c, p, v: getattr(TuneType, v) if v else None,
     show_default=True,
 )
 @click.option(
     "--model-type",
     default="logreg",
-    type=str,
+    type=click.Choice(["logreg", "knn", "randomforest"]),
     callback=lambda c, p, v: getattr(ModelType, v) if v else None,
     show_default=True,
 )
@@ -61,7 +61,7 @@ from .defs import DimReduceType, ModelType, TuneType
 @click.option(
     "--red-type",
     default="none",
-    type=str,
+    type=click.Choice(["none", "pca", "tsvd"]),
     callback=lambda c, p, v: getattr(DimReduceType, v) if v else None,
     show_default=True,
 )
@@ -80,7 +80,7 @@ def train(
     random_state: int,
     red_type: DimReduceType,
     use_scaler: bool,
-    hyperparams: dict,
+    hyperparams: dict[str, str],
 ) -> None:
     features, target = get_dataset(dataset_path)
     # mlflow.set_experiment("default")
@@ -114,9 +114,7 @@ def train(
             )
 
             # обучение на всех данных для улучшения модели уже после её оценки
-            pipeline.fit(
-                features, target
-            )
+            pipeline.fit(features, target)
             mlflow.sklearn.log_model(pipeline, "model")
             dump(pipeline, save_model_path)
 
@@ -182,9 +180,7 @@ def train(
                     ] = best_param_val
 
             # обучение на всех данных для улучшения модели уже после её оценки
-            best_estimator.fit(
-                features, target
-            )
+            best_estimator.fit(features, target)
             mlflow.sklearn.log_model(best_estimator, "model")
             dump(best_estimator, save_model_path)
 

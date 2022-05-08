@@ -77,7 +77,7 @@ def test_error_for_invalid_tuning(
                 'test',
             ],
         )
-        assert result.exit_code == 2
+        assert result.exit_code != 0
         assert "Invalid value for '--tuning'" in result.output
 
 
@@ -173,7 +173,7 @@ def test_error_for_invalid_model_type(
                 'test',
             ],
         )
-        assert result.exit_code == 2
+        assert result.exit_code != 0
         assert "Invalid value for '--model-type'" in result.output
 
 
@@ -269,7 +269,7 @@ def test_error_for_invalid_red_type(
                 'test',
             ],
         )
-        assert result.exit_code == 2
+        assert result.exit_code != 0
         assert "Invalid value for '--red-type'" in result.output
 
 
@@ -341,7 +341,7 @@ def test_error_for_invalid_scaler_type(
                 'test',
             ],
         )
-        assert result.exit_code == 2
+        assert result.exit_code != 0
         assert "Invalid value for '--use-scaler'" in result.output
 
 
@@ -418,7 +418,7 @@ def test_error_for_invalid_hyperparams(
                 'c = 10'
             ],
         )
-        assert result.exit_code == 1
+        assert result.exit_code != 0
 
 
 def test_success_for_valid_hyperparams(

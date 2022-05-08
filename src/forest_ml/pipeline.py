@@ -5,13 +5,14 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA, TruncatedSVD
 from .defs import ModelType, DimReduceType
+from typing import Any
 
 
 def create_pipeline(
     use_dim_red: DimReduceType,
     use_scaler: bool,
     model_type: ModelType,
-    hyperparams: dict,
+    hyperparams: dict[str, Any],
     random_state: int,
 ) -> Pipeline:
     pipeline_steps = []

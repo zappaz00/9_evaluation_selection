@@ -1,9 +1,11 @@
 # эти импорты нужны для корректного eval распределений параметров
 from scipy.stats import loguniform, uniform
 from numpy import linspace, logspace
+import numpy as np
+from typing import Any
 
 
-def parse_hyperparams(click_in):
+def parse_hyperparams(click_in: dict[str, str]) -> dict[str, Any]:
     # парсим экстра-параметры
     hyperparams_dict = {}
     for hyperparam in click_in:
@@ -13,8 +15,7 @@ def parse_hyperparams(click_in):
             continue
 
         # Выполняет оценку выражения по строке
-        curr_split[1] = eval(curr_split[1])
-        hyperparams_dict.update([curr_split])
+        hyperparams_dict[curr_split[0]] = eval(curr_split[1])
 
     if hyperparams_dict.get("c") is not None:
         hyperparams_dict["C"] = hyperparams_dict.pop(
