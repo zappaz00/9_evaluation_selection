@@ -63,6 +63,10 @@ poetry run train ...
 poetry run eda ...
 ```
 
+## Tests
+All tests passed:
+![tests.png](tests.png)
+
 ## Experiment with manual hyperparameters tuning and CV
 For estimating model performance chosen 4 metrics: 
 * accuracy, 
