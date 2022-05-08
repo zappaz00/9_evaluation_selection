@@ -236,7 +236,9 @@ def test_error_for_invalid_hyperparams(
             True,
             "--model-type",
             'logreg',
-            'c = 0'
+            "--tuning"
+            'manual'
+            'c = 10'
         ],
     )
     assert result.exit_code == 1
@@ -253,7 +255,9 @@ def test_success_for_valid_hyperparams(
                 True,
                 "--model-type",
                 'logreg',
-                'c=0'
+                "--tuning"
+                'manual'
+                'c=10'
             ],
         )
         assert result.exit_code == 0
