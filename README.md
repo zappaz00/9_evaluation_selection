@@ -65,19 +65,19 @@ poetry run eda ...
 
 ## Tests
 All tests passed:
-![tests.png](tests.png)
+![screenshots/tests.png](screenshots/tests.png)
 
 ## Format and lint
 This package checked with [black](https://github.com/psf/black) and [flake8](https://pypi.org/project/flake8/)
 ### Black:
-![black_format.png](black_format.png)
+![screenshots/black_format.png](screenshots/black_format.png)
 
 ### Flake8:
-![flake8_lint.png](flake8_lint.png)
+![screenshots/flake8_lint.png](screenshots/flake8_lint.png)
 
 ## Type annotation
 Types checked with [mypy](https://mypy.readthedocs.io/en/stable/):
-![mypy_check.png](mypy_check.png)
+![screenshots/mypy_check.png](screenshots/mypy_check.png)
 
 Flake8 inform about unused import, but this import necessary for correct work of hyperparams space evaluation.
 
@@ -90,4 +90,4 @@ For estimating model performance chosen 4 metrics:
 
 Below table with results of experiment sorted by accuracy. 
 
-![mlflow_manual_tune.png](mlflow_manual_tune.png)
+![screenshots/mlflow_manual_tune.png](screenshots/mlflow_manual_tune.png)
