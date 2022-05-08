@@ -97,6 +97,7 @@ def train(
                                        return_train_score=True,
                                        scoring=metrics_names)
 
+            pipeline.fit(features, target) # обучение на всех данных для улучшения моедли уже после её оценки
             mlflow.sklearn.log_model(pipeline, "model")
             dump(pipeline, save_model_path)
 
@@ -132,6 +133,7 @@ def train(
                 elif 'reductor__' in best_param_name:
                     all_params[best_param_name.replace('reductor__', '')] = best_param_val
 
+            best_estimator.fit(features, target)  # обучение на всех данных для улучшения моедли уже после её оценки
             mlflow.sklearn.log_model(best_estimator, "model")
             dump(best_estimator, save_model_path)
 
