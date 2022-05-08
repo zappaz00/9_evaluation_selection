@@ -6,9 +6,9 @@ import mlflow
 import mlflow.sklearn
 import numpy as np
 
-from sklearn.model_selection import cross_validate, GridSearchCV, KFold, RandomizedSearchCV
+from sklearn.model_selection import cross_validate, GridSearchCV, StratifiedKFold, RandomizedSearchCV
 
-from .params import get_params_distr, parse_hyperparams
+from .params import parse_hyperparams
 from .data import get_dataset
 from .pipeline import create_pipeline
 from .defs import DimReduceType, ModelType, TuneType
@@ -98,6 +98,7 @@ def train(
                                        scoring=metrics_names)
 
             mlflow.sklearn.log_model(pipeline, "model")
+            dump(pipeline, save_model_path)
 
         elif tuning == TuneType.auto_random or tuning == TuneType.auto_grid:
             params_for_search = {}
@@ -112,8 +113,8 @@ def train(
 
             print(params_for_search)
 
-            inner_cv = KFold(n_splits=3,  shuffle=True, random_state=random_state)
-            outer_cv = KFold(n_splits=10, shuffle=True, random_state=random_state)
+            inner_cv = StratifiedKFold(n_splits=3,  shuffle=True, random_state=random_state)
+            outer_cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=random_state)
 
             # для внутреннего цикла согласно заданию одна метрика
             if tuning == TuneType.auto_random:
@@ -132,6 +133,7 @@ def train(
                     all_params[best_param_name.replace('reductor__', '')] = best_param_val
 
             mlflow.sklearn.log_model(best_estimator, "model")
+            dump(best_estimator, save_model_path)
 
         # считаем метрики
         metrics = {}
@@ -149,5 +151,4 @@ def train(
         mlflow.log_params(all_params)
         mlflow.log_metrics(metrics)
         mlflow.sklearn.log_model(pipeline, "model")
-        dump(pipeline, save_model_path)
         click.echo(f"Model is saved to {save_model_path}.")
