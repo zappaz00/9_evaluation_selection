@@ -8,14 +8,18 @@ from .defs import ModelType, DimReduceType
 
 
 def create_pipeline(
-    use_dim_red: DimReduceType, use_scaler: bool, model_type: ModelType, hyperparams: dict, random_state: int
+    use_dim_red: DimReduceType,
+    use_scaler: bool,
+    model_type: ModelType,
+    hyperparams: dict,
+    random_state: int,
 ) -> Pipeline:
     pipeline_steps = []
     if use_scaler:
         pipeline_steps.append(("scaler", StandardScaler()))
 
     reductor = None
-    n_components = hyperparams.pop('n_components', None)
+    n_components = hyperparams.pop("n_components", None)
     if use_dim_red == DimReduceType.pca:
         if n_components is not None:
             reductor = PCA(n_components=n_components)
@@ -28,11 +32,7 @@ def create_pipeline(
             reductor = TruncatedSVD()
 
     if reductor is not None:
-        pipeline_steps.append(
-            (
-                "reductor", reductor
-            )
-        )
+        pipeline_steps.append(("reductor", reductor))
 
     clf = None
     if model_type == ModelType.logreg:
@@ -40,18 +40,14 @@ def create_pipeline(
     elif model_type == ModelType.randomforest:
         clf = RandomForestClassifier(random_state=random_state)
     elif model_type == ModelType.knn:
-        clf = KNeighborsClassifier() #no random_state
-    elif model_type == None:
+        clf = KNeighborsClassifier()  # no random_state
+    elif model_type is None:
         clf = None
     else:
-        raise ValueError('Unknown model type')
+        raise ValueError("Unknown model type")
 
     if clf is not None:
         clf.set_params(**hyperparams)
-        pipeline_steps.append(
-            (
-                "classifier", clf
-            )
-        )
+        pipeline_steps.append(("classifier", clf))
 
     return Pipeline(steps=pipeline_steps)

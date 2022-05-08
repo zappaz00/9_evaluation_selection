@@ -13,9 +13,8 @@ import pandas as pd
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     show_default=True,
 )
-def eda(
-        dataset_path: Path
-) -> None:
+def eda(dataset_path: Path) -> None:
     dataset = pd.read_csv(dataset_path)
-    profile = ProfileReport(dataset, title="Pandas Profiling Report", explorative=True)
+    profile = ProfileReport(dataset, title="Pandas Profiling Report",
+                            explorative=True)
     profile.to_file("./eda_report.html")

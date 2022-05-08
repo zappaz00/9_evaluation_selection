@@ -67,6 +67,16 @@ poetry run eda ...
 All tests passed:
 ![tests.png](tests.png)
 
+## Format and lint
+This package checked with black and flake8
+### Black:
+![black_format.png](black_format.png)
+
+### Flake8:
+![flake8_lint.png](flake8_lint.png)
+
+Flake8 inform about unused import, but this import necessary for correct work of hyperparams space evaluation.
+
 ## Experiment with manual hyperparameters tuning and CV
 For estimating model performance chosen 4 metrics: 
 * accuracy, 

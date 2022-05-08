@@ -6,7 +6,12 @@ import mlflow
 import mlflow.sklearn
 import numpy as np
 
-from sklearn.model_selection import cross_validate, GridSearchCV, StratifiedKFold, RandomizedSearchCV
+from sklearn.model_selection import (
+    cross_validate,
+    GridSearchCV,
+    StratifiedKFold,
+    RandomizedSearchCV,
+)
 
 from .params import parse_hyperparams
 from .data import get_dataset
@@ -14,9 +19,11 @@ from .pipeline import create_pipeline
 from .defs import DimReduceType, ModelType, TuneType
 
 
-@click.command(context_settings=dict(
-    ignore_unknown_options=True,
-))
+@click.command(
+    context_settings=dict(
+        ignore_unknown_options=True,
+    )
+)
 @click.option(
     "-d",
     "--dataset-path",
@@ -33,14 +40,14 @@ from .defs import DimReduceType, ModelType, TuneType
 )
 @click.option(
     "--tuning",
-    default='auto_random',
+    default="auto_random",
     type=click.Choice(TuneType.__members__),
     callback=lambda c, p, v: getattr(TuneType, v) if v else None,
     show_default=True,
 )
 @click.option(
     "--model-type",
-    default='logreg',
+    default="logreg",
     type=click.Choice(ModelType.__members__),
     callback=lambda c, p, v: getattr(ModelType, v) if v else None,
     show_default=True,
@@ -53,7 +60,7 @@ from .defs import DimReduceType, ModelType, TuneType
 )
 @click.option(
     "--red-type",
-    default='none',
+    default="none",
     type=click.Choice(DimReduceType.__members__),
     callback=lambda c, p, v: getattr(DimReduceType, v) if v else None,
     show_default=True,
@@ -64,16 +71,16 @@ from .defs import DimReduceType, ModelType, TuneType
     type=bool,
     show_default=True,
 )
-@click.argument('hyperparams', nargs=-1, type=click.UNPROCESSED)
+@click.argument("hyperparams", nargs=-1, type=click.UNPROCESSED)
 def train(
-        dataset_path: Path,
-        save_model_path: Path,
-        tuning: TuneType,
-        model_type: ModelType,
-        random_state: int,
-        red_type: DimReduceType,
-        use_scaler: bool,
-        hyperparams: dict,
+    dataset_path: Path,
+    save_model_path: Path,
+    tuning: TuneType,
+    model_type: ModelType,
+    random_state: int,
+    red_type: DimReduceType,
+    use_scaler: bool,
+    hyperparams: dict,
 ) -> None:
     features, target = get_dataset(dataset_path)
     # mlflow.set_experiment("default")
@@ -82,22 +89,34 @@ def train(
         hyperparams_dict = parse_hyperparams(hyperparams)
 
         # создаём пайплайн
-        pipeline = create_pipeline(red_type, use_scaler, model_type, hyperparams_dict, random_state)
-        metrics_names = ['accuracy', 'f1_weighted', 'precision_weighted', 'recall_weighted']
+        pipeline = create_pipeline(
+            red_type, use_scaler, model_type, hyperparams_dict, random_state
+        )
+        metrics_names = [
+            "accuracy",
+            "f1_weighted",
+            "precision_weighted",
+            "recall_weighted",
+        ]
 
         all_params = {}
         if tuning == TuneType.manual:
             all_params = hyperparams_dict
 
-            cv_scores = cross_validate(pipeline,
-                                       features,
-                                       target,
-                                       cv=5,
-                                       return_estimator=True,
-                                       return_train_score=True,
-                                       scoring=metrics_names)
+            cv_scores = cross_validate(
+                pipeline,
+                features,
+                target,
+                cv=5,
+                return_estimator=True,
+                return_train_score=True,
+                scoring=metrics_names,
+            )
 
-            pipeline.fit(features, target) # обучение на всех данных для улучшения моедли уже после её оценки
+            # обучение на всех данных для улучшения модели уже после её оценки
+            pipeline.fit(
+                features, target
+            )
             mlflow.sklearn.log_model(pipeline, "model")
             dump(pipeline, save_model_path)
 
@@ -105,49 +124,81 @@ def train(
             params_for_search = {}
 
             for hyperparam_name, hyperparam_space in hyperparams_dict.items():
-                if hyperparam_name == 'n_components':
-                    pipe_param_name = 'reductor__' + hyperparam_name
+                if hyperparam_name == "n_components":
+                    pipe_param_name = "reductor__" + hyperparam_name
                 else:
-                    pipe_param_name = 'classifier__' + hyperparam_name
+                    pipe_param_name = "classifier__" + hyperparam_name
 
                 params_for_search[pipe_param_name] = hyperparam_space
 
             print(params_for_search)
 
-            inner_cv = StratifiedKFold(n_splits=3,  shuffle=True, random_state=random_state)
-            outer_cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=random_state)
+            inner_cv = StratifiedKFold(
+                n_splits=3, shuffle=True, random_state=random_state
+            )
+            outer_cv = StratifiedKFold(
+                n_splits=10, shuffle=True, random_state=random_state
+            )
 
             # для внутреннего цикла согласно заданию одна метрика
             if tuning == TuneType.auto_random:
-                param_searcher = RandomizedSearchCV(estimator=pipeline, param_distributions=params_for_search, scoring='accuracy', cv=inner_cv) # refit=True default
+                param_searcher = RandomizedSearchCV(
+                    estimator=pipeline,
+                    param_distributions=params_for_search,
+                    scoring="accuracy",
+                    cv=inner_cv,
+                )  # refit=True default
             elif tuning == TuneType.auto_grid:
-                param_searcher = GridSearchCV(estimator=pipeline, param_grid=params_for_search, scoring='accuracy', cv=inner_cv) # refit=True default
+                param_searcher = GridSearchCV(
+                    estimator=pipeline,
+                    param_grid=params_for_search,
+                    scoring="accuracy",
+                    cv=inner_cv,
+                )  # refit=True default
 
-            # у всяких сёрчеров параметров есть метод predict, который автоматически адресуется к best_estimator.
-            cv_scores = cross_validate(param_searcher, X=features, y=target, cv=outer_cv, scoring=metrics_names, return_estimator=True, return_train_score=True)
-            best_estimator = cv_scores['estimator'][np.argmax(cv_scores['test_accuracy'])]
+            # у всяких сёрчеров параметров есть метод predict,
+            # который автоматически адресуется к best_estimator.
+            cv_scores = cross_validate(
+                param_searcher,
+                X=features,
+                y=target,
+                cv=outer_cv,
+                scoring=metrics_names,
+                return_estimator=True,
+                return_train_score=True,
+            )
+            best_estimator = cv_scores["estimator"][
+                np.argmax(cv_scores["test_accuracy"])
+            ]
             best_params = best_estimator.get_params()
             for best_param_name, best_param_val in best_params.items():
-                if 'classifier__' in best_param_name:
-                    all_params[best_param_name.replace('classifier__', '')] = best_param_val
-                elif 'reductor__' in best_param_name:
-                    all_params[best_param_name.replace('reductor__', '')] = best_param_val
+                if "classifier__" in best_param_name:
+                    all_params[
+                        best_param_name.replace("classifier__", "")
+                    ] = best_param_val
+                elif "reductor__" in best_param_name:
+                    all_params[
+                        best_param_name.replace("reductor__", "")
+                    ] = best_param_val
 
-            best_estimator.fit(features, target)  # обучение на всех данных для улучшения моедли уже после её оценки
+            # обучение на всех данных для улучшения модели уже после её оценки
+            best_estimator.fit(
+                features, target
+            )
             mlflow.sklearn.log_model(best_estimator, "model")
             dump(best_estimator, save_model_path)
 
         # считаем метрики
         metrics = {}
         for metrics_name in metrics_names:
-            cv_name = 'test_' + metrics_name
+            cv_name = "test_" + metrics_name
             metrics[metrics_name] = float(np.mean(cv_scores[cv_name]))
             click.echo(f"{metrics_name}: {metrics[metrics_name]}.")
 
         # готовим параметры для MLFlow
-        all_params['model_type'] = model_type
-        all_params['use_scaler'] = use_scaler
-        all_params['dim_red_type'] = red_type
+        all_params["model_type"] = model_type
+        all_params["use_scaler"] = use_scaler
+        all_params["dim_red_type"] = red_type
 
         # записываем в MLFlow и сохраняем модель
         mlflow.log_params(all_params)
