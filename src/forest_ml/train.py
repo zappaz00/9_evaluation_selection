@@ -41,14 +41,14 @@ from .defs import DimReduceType, ModelType, TuneType
 @click.option(
     "--tuning",
     default="auto_random",
-    type=click.Choice(TuneType.__members__),
+    type=str,
     callback=lambda c, p, v: getattr(TuneType, v) if v else None,
     show_default=True,
 )
 @click.option(
     "--model-type",
     default="logreg",
-    type=click.Choice(ModelType.__members__),
+    type=str,
     callback=lambda c, p, v: getattr(ModelType, v) if v else None,
     show_default=True,
 )
@@ -61,7 +61,7 @@ from .defs import DimReduceType, ModelType, TuneType
 @click.option(
     "--red-type",
     default="none",
-    type=click.Choice(DimReduceType.__members__),
+    type=str,
     callback=lambda c, p, v: getattr(DimReduceType, v) if v else None,
     show_default=True,
 )

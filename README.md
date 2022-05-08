@@ -68,12 +68,16 @@ All tests passed:
 ![tests.png](tests.png)
 
 ## Format and lint
-This package checked with black and flake8
+This package checked with [black](https://github.com/psf/black) and [flake8](https://pypi.org/project/flake8/)
 ### Black:
 ![black_format.png](black_format.png)
 
 ### Flake8:
 ![flake8_lint.png](flake8_lint.png)
+
+## Type annotation
+Types checked with [mypy](https://mypy.readthedocs.io/en/stable/):
+![mypy_check.png](mypy_check.png)
 
 Flake8 inform about unused import, but this import necessary for correct work of hyperparams space evaluation.
 
