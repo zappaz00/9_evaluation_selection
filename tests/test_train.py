@@ -4,6 +4,7 @@ from faker import Faker
 from os.path import exists
 import pytest
 import os
+import joblib
 import pandas as pd
 
 from forest_ml.train import train
@@ -12,7 +13,7 @@ csv_path = 'data/forest_data.csv'
 model_path = 'data/model.joblib'
 
 
-def generate_forest_dataset():
+def generate_forest_dataset(rows_num=100):
     columns = ['Elevation', 'Aspect', 'Slope', 'Horizontal_Distance_To_Hydrology',
                'Vertical_Distance_To_Hydrology', 'Horizontal_Distance_To_Roadways', 'Hillshade_9am', 'Hillshade_Noon',
                'Hillshade_3pm', 'Horizontal_Distance_To_Fire_Points', 'Wilderness_Area1', 'Wilderness_Area2',
@@ -24,7 +25,6 @@ def generate_forest_dataset():
                'Soil_Type30', 'Soil_Type31', 'Soil_Type32', 'Soil_Type33', 'Soil_Type34', 'Soil_Type35',
                'Soil_Type36', 'Soil_Type37', 'Soil_Type38', 'Soil_Type39', 'Soil_Type40', 'Cover_Type']
 
-    rows_num = 100
     fake = Faker()
     data = np.zeros((rows_num, len(columns)))
 
@@ -49,6 +49,19 @@ def generate_forest_dataset():
     data_pd = pd.DataFrame(data=data, columns=columns, index=data_indx, dtype=np.int32)
 
     return data_pd
+
+
+def check_model_correctness():
+    test_data = generate_forest_dataset(rows_num=10)
+    test_data_np = np.array(test_data)
+    test_data_np = test_data_np[:, 1:] # выкинем Id
+
+    model = joblib.load(model_path)
+    labels = model.predict(test_data_np)
+    if np.any(labels < 1) or np.any(labels > 7):
+        return False
+
+    return True
 
 
 @pytest.fixture
@@ -103,6 +116,7 @@ def test_success_for_manual_tuning(
         assert result.exit_code == 0
         assert "accuracy" in result.output
         assert exists(model_path) is True
+        assert check_model_correctness() is True
 
 
 def test_success_for_auto_random_tuning(
@@ -127,6 +141,7 @@ def test_success_for_auto_random_tuning(
         assert result.exit_code == 0
         assert "accuracy" in result.output
         assert exists(model_path) is True
+        assert check_model_correctness() is True
 
 
 def test_success_for_auto_grid_tuning(
@@ -151,6 +166,7 @@ def test_success_for_auto_grid_tuning(
         assert result.exit_code == 0
         assert "accuracy" in result.output
         assert exists(model_path) is True
+        assert check_model_correctness() is True
 
 
 # ---------------Model type---------------
@@ -199,6 +215,7 @@ def test_success_for_logreg_model_type(
         assert result.exit_code == 0
         assert "accuracy" in result.output
         assert exists(model_path) is True
+        assert check_model_correctness() is True
 
 
 def test_success_for_knn_model_type(
@@ -223,6 +240,7 @@ def test_success_for_knn_model_type(
         assert result.exit_code == 0
         assert "accuracy" in result.output
         assert exists(model_path) is True
+        assert check_model_correctness() is True
 
 
 def test_success_for_randomforest_model_type(
@@ -247,6 +265,7 @@ def test_success_for_randomforest_model_type(
         assert result.exit_code == 0
         assert "accuracy" in result.output
         assert exists(model_path) is True
+        assert check_model_correctness() is True
 
 
 # ---------------Reduction type---------------
@@ -295,6 +314,7 @@ def test_success_for_none_red_type(
         assert result.exit_code == 0
         assert "accuracy" in result.output
         assert exists(model_path) is True
+        assert check_model_correctness() is True
 
 
 def test_success_for_pca_red_type(
@@ -319,6 +339,7 @@ def test_success_for_pca_red_type(
         assert result.exit_code == 0
         assert "accuracy" in result.output
         assert exists(model_path) is True
+        assert check_model_correctness() is True
 
 
 # ---------------Scaler option---------------
@@ -367,6 +388,7 @@ def test_success_for_true_scaler_type(
         assert result.exit_code == 0
         assert "accuracy" in result.output
         assert exists(model_path) is True
+        assert check_model_correctness() is True
 
 
 def test_success_for_false_scaler_type(
@@ -391,6 +413,7 @@ def test_success_for_false_scaler_type(
         assert result.exit_code == 0
         assert "accuracy" in result.output
         assert exists(model_path) is True
+        assert check_model_correctness() is True
 
 
 # ---------------HyperParams---------------
@@ -448,6 +471,7 @@ def test_success_for_valid_hyperparams(
         assert result.exit_code == 0
         assert "accuracy" in result.output
         assert exists(model_path) is True
+        assert check_model_correctness() is True
 
 
 def test_success_for_random_search(
@@ -478,6 +502,7 @@ def test_success_for_random_search(
         assert result.exit_code == 0
         assert "accuracy" in result.output
         assert exists(model_path) is True
+        assert check_model_correctness() is True
 
 
 def test_success_for_grid_search(
@@ -508,3 +533,4 @@ def test_success_for_grid_search(
         assert result.exit_code == 0
         assert "accuracy" in result.output
         assert exists(model_path) is True
+        assert check_model_correctness() is True
