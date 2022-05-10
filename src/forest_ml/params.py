@@ -1,8 +1,9 @@
-# эти импорты нужны для корректного eval распределений параметров
-from scipy.stats import loguniform, uniform
-from numpy import linspace, logspace
-import numpy as np
 from typing import Any
+
+# эти импорты нужны для корректного eval распределений параметров
+from scipy.stats import loguniform, uniform  # noqa: F401
+from numpy import linspace, logspace  # noqa: F401
+import numpy as np  # noqa: F401
 
 
 def parse_hyperparams(click_in: dict[str, str]) -> dict[str, Any]:

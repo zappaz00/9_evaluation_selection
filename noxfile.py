@@ -12,9 +12,9 @@ nox.options.sessions = "black", "flake8", "mypy", "tests"
 locations = "src", "noxfile.py"
 
 
-def install_with_constraints(session: Session,
-                             *args: str,
-                             **kwargs: Any) -> None:
+def install_with_constraints(
+    session: Session, *args: str, **kwargs: Any
+) -> None:  # noqa: E501
     """Install packages constrained by Poetry's lock file.
     By default newest versions of packages are installed,
     but we use versions from poetry.lock instead to
@@ -63,7 +63,6 @@ def mypy(session: Session) -> None:
 def tests(session: Session) -> None:
     """Run the test suite."""
     args = session.posargs
-    session.run("poetry", "shell")
     session.run("poetry", "install", "--no-dev", external=True)
     install_with_constraints(session, "pytest")
     install_with_constraints(session, "Faker")

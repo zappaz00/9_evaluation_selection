@@ -15,5 +15,7 @@ import pandas as pd
 )
 def eda(dataset_path: Path) -> None:
     dataset = pd.read_csv(dataset_path)
-    profile = ProfileReport(dataset, title="Pandas Profiling Report", explorative=True)
+    profile = ProfileReport(
+        dataset, title="Pandas Profiling Report", explorative=True
+    )  # noqa: E501
     profile.to_file("./eda_report.html")
