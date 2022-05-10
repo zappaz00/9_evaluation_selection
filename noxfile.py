@@ -41,6 +41,14 @@ def black(session: Session) -> None:
 
 
 @nox.session(python=False)
+def flake(session: Session) -> None:
+    """Run black code formatter."""
+    args = session.posargs or locations
+    install_with_constraints(session, "flake8")
+    session.run("flake8", *args)
+
+
+@nox.session(python=False)
 def mypy(session: Session) -> None:
     """Type-check using mypy."""
     args = session.posargs or locations
@@ -52,7 +60,6 @@ def mypy(session: Session) -> None:
 def tests(session: Session) -> None:
     """Run the test suite."""
     args = session.posargs
-    session.run("poetry", "shell", external=True)
     session.run("poetry", "install", "--no-dev", external=True)
     install_with_constraints(session, "pytest")
     install_with_constraints(session, "Faker")
