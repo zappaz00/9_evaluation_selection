@@ -2,6 +2,19 @@
 
 ## Usage
 
+This package allows you to train model for classifying forest cover type.
+1. Clone this repository to your machine
+2. Download [Forest dataset](https://www.kaggle.com/competitions/forest-cover-type-prediction), save csv file locally (default path is data/train.csv in repository's root)
+3. Make sure Python 3.9 and [Poetry](https://python-poetry.org/) are installed on your machine.
+4. Install the project dependencies (*run this and following commands in terminal, from a root of cloned repository*):
+```console
+poetry install --no-dev
+```
+5. Run MLFlow UI to see the information about experiments you conducted:
+```console
+poetry run mlflow ui
+```
+
 Package has two scripts:
 * *eda* - for exploratory data analysis
 * *train* - for training ML models
@@ -11,10 +24,15 @@ Package has two scripts:
 
 Script may be launched from terminal like this:
 ```console
-eda -d "data/train.csv"
+poetry run eda -d "data/train.csv"
 ```
 Where:
 * -d (--dataset-path) is path to .csv data file
+
+To get help use:
+```console
+poetry run eda --help
+```
 
 ## Train
 **train** works in two modes:
@@ -24,17 +42,17 @@ Where:
 Script may be launched from terminal like this:
 ### For manual setting: 
 ```console
-train -d "data/train.csv" -s "data/model.joblib" --tuning 'manual' --model-type 'logreg' --random-state 42 --red-type 'pca' --use-scaler True c=100.0 max_iter=1000 
+poetry run train -d "data/train.csv" -s "data/model.joblib" --tuning 'manual' --model-type 'logreg' --random-state 42 --red-type 'pca' --use-scaler True c=100.0 max_iter=1000 
 ```
 
 ### For Random tuning:
 ```console
-train -d "data/train.csv" --tuning 'auto_random' --model-type 'knn' --red-type 'pca' --use-scaler True n_neighbors='uniform(1,20)' weights=['uniform','distance'] 
+poetry run train -d "data/train.csv" --tuning 'auto_random' --model-type 'knn' --red-type 'pca' --use-scaler True n_neighbors='uniform(1,20)' weights=['uniform','distance'] 
 ```
 
 ### For Grid tuning:
 ```console
-train -d "data/train.csv" --tuning 'auto_random' --model-type 'knn' --red-type 'pca' --use-scaler True n_neighbors='linspace(1,20)' weights=['uniform','distance'] 
+poetry run train -d "data/train.csv" --tuning 'auto_random' --model-type 'knn' --red-type 'pca' --use-scaler True n_neighbors='linspace(1,20)' weights=['uniform','distance'] 
 ```
 
 Where:
@@ -47,24 +65,29 @@ Where:
 * --use-scaler is a flag that tells to pipeline use standard scaler for data or not. *Default*: true
 * other args is hyperparams for pipeline steps and must be in form param1=val1 param2=val2 and etc. Value of parameter can be any python expression.
 
-This package tested on data with [Forest dataset](https://www.kaggle.com/competitions/forest-cover-type-prediction).
+To get help use:
+```console
+poetry run train --help
+```
 
 ## Develop guide
 Package uses [poetry](https://python-poetry.org/) for controlling dependencies. Please install it before launch and test.
-After install poetry and activate virtual enviroment run from terminal
+After install poetry and activate virtual environment run from terminal
 ```console
 poetry install
 ```
-And poetry automatically will download and install dependencies. After you can launch train/eda scripts with poetry:
+And poetry automatically will download and install dependencies. After you can use developer instruments, e.g. pytest:
 ```console
-poetry run train ...
+poetry run pytest
 ```
+More conveniently, to run all sessions of testing and formatting in a single command, install and use [nox](https://nox.thea.codes/en/stable/):
 ```console
-poetry run eda ...
+nox [-r]
 ```
+![screenshots/nox.PNG](screenshots/nox.PNG)
 
 ## Tests
-All tests passed:
+All tests passed:  
 ![screenshots/tests.PNG](screenshots/tests.PNG)
 
 ## Format and lint
@@ -75,11 +98,9 @@ This package checked with [black](https://github.com/psf/black) and [flake8](htt
 ### Flake8:
 ![screenshots/flake8_lint.PNG](screenshots/flake8_lint.PNG)
 
-## Type annotation
-Types checked with [mypy](https://mypy.readthedocs.io/en/stable/):
+## Type annotation 
+Types checked with [mypy](https://mypy.readthedocs.io/en/stable/):  
 ![screenshots/mypy_check.PNG](screenshots/mypy_check.PNG)
-
-Flake8 inform about unused import, but this import necessary for correct work of hyperparams space evaluation.
 
 ##
 
@@ -90,6 +111,6 @@ For estimating model performance chosen 4 metrics:
 * precision weighted, 
 * recall weighted
 
-Below table with results of experiment sorted by accuracy. 
+Below table with results of experiment sorted by accuracy.  
 
 ![screenshots/mlflow_manual_tune.png](screenshots/mlflow_manual_tune.png)
