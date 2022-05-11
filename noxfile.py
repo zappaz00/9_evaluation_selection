@@ -59,10 +59,11 @@ def mypy(session: Session) -> None:
     session.run("mypy", *args)
 
 
-@nox.session(python="3.9")
+@nox.session(python=False)
 def tests(session: Session) -> None:
     """Run the test suite."""
     args = session.posargs
+    session.run("poetry", "shell")
     session.run("poetry", "install", "--no-dev", external=True)
     install_with_constraints(session, "pytest", "Faker")
     session.run("pytest", *args)
