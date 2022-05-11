@@ -1,5 +1,7 @@
 # Forest ML
 
+[![Python package](https://github.com/zappaz00/9_evaluation_selection/actions/workflows/python-package.yml/badge.svg)](https://github.com/zappaz00/9_evaluation_selection/actions/workflows/python-package.yml)
+
 ## Usage
 
 This package allows you to train model for classifying forest cover type.
